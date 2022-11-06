@@ -1,0 +1,51 @@
+library(readr)
+library(dplyr)
+setwd("D:/R")
+
+#Load, unzip and read source files
+fileUrl<-"https://d396qusza40orc.cloudfront.net/getdata%2Fprojectfiles%2FUCI%20HAR%20Dataset.zip"
+download.file(fileUrl,destfile="Assignment3.zip",method = "curl")
+unzip("Assignment3.zip",list = TRUE)
+
+features<-read.table(unzip("Assignment3.zip","UCI HAR Dataset/features.txt"),header = FALSE)
+activity_labels<-read.table(unzip("Assignment3.zip","UCI HAR Dataset/activity_labels.txt"),header = FALSE)
+
+##Train
+subject_train<-read.table(unzip("Assignment3.zip","UCI HAR Dataset/train/subject_train.txt"),header = FALSE)
+X_train<-read.table(unzip("Assignment3.zip","UCI HAR Dataset/train/X_train.txt"),header = FALSE)
+y_train<-read.table(unzip("Assignment3.zip","UCI HAR Dataset/train/y_train.txt"),header = FALSE)
+
+
+##Test
+subject_test<-read.table(unzip("Assignment3.zip","UCI HAR Dataset/test/subject_test.txt"),header = FALSE)
+X_test<-read.table(unzip("Assignment3.zip","UCI HAR Dataset/test/X_test.txt"),header = FALSE)
+y_test<-read.table(unzip("Assignment3.zip","UCI HAR Dataset/test/y_test.txt"),header = FALSE)
+
+
+##Question 1. Merges the training and the test sets to create one data set.
+total_set<-rbind(X_test,X_train)
+
+
+##Question 2. Extracts only the measurements on the mean and standard deviation for each measurement.
+total_set<-total_set[,grep('mean|std',features$V2)]
+
+
+##Question 3. Uses descriptive activity names to name the activities in the data set. 
+activity<-rbind(y_test,y_train)
+total_set_activity<-cbind(activity,total_set)
+colnames(total_set_activity)[1]<-"act"
+total_set_activity<-total_set_activity%>% arrange(act) %>%  mutate(act = as.character(factor(act, levels=1:6, 
+ labels= activity_labels$V2)))
+
+
+##Question 4. Appropriately labels the data set with descriptive variable names.
+colnames(total_set_activity)<-c("act",grep('mean|std',features$V2,value=TRUE))
+
+
+##Question 5. From the data set in step 4, creates a second, independent tidy data set with the average of each variable for each activity and each subject.
+subject<-rbind(subject_test,subject_train)
+total_set_activity_subject<-cbind(subject,total_set_activity)
+tidydata<-total_set_activity_subject%>%group_by(V1,act)%>%summarise_all(mean)
+View(tidydata)
+
+
